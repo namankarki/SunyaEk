@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+
+// User model to handle customers and administrators
+model User {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String    @unique
+  password    String
+  role        Role      @default(USER)       // USER or ADMIN
+  vehicles    Vehicle[] // A user can own multiple vehicles
+  reservations Reservation[] // A user can make multiple reservations
+}
+
+// Enum for user roles (Admin and Regular User)
+enum Role {
+  USER
+  ADMIN
+}
+
+model Vehicle {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  ownerId  String
+  owner    User    @relation(fields: [ownerId], references: [id])
+  number   String
+  type     Type
+}
+
+enum Type {
+  twowheelers
+  onewheelers
+}
+
+model ParkingSlot {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  slotNumber  String      @unique
+  isAvailable Boolean     @default(false)
+  reservations Reservation[] // Reservations for this slot
+}
+
+model Reservation {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  parkingSlotId   String
+  parkingSlot     ParkingSlot  @relation(fields: [parkingSlotId], references: [id])
+  startTime       DateTime     // Time when the reservation starts
+  endTime         DateTime     // Time when the reservation ends
+}
